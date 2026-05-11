@@ -1,10 +1,7 @@
-import { FrescoRibbon } from "@/components/landing/fresco-ribbon";
 import { ImmersiveHero } from "@/components/landing/immersive-hero";
-import { MediaGalleryPreview } from "@/components/landing/media-gallery-preview";
-import { UploadVaultPreview } from "@/components/landing/upload-vault-preview";
+import { LandingShell } from "@/components/landing/landing-shell";
 import { SiteHeader } from "@/components/layout/site-header";
 import { GlassCard } from "@/components/ui/glass-card";
-import { mockContributions, seededStoryline, seededThemes } from "@/data/mock-memories";
 
 export default function HomePage() {
   return (
@@ -15,12 +12,7 @@ export default function HomePage() {
 
       <main className="pb-14">
         <ImmersiveHero />
-        <FrescoRibbon contributions={mockContributions} storyline={seededStoryline} themes={seededThemes} />
-
-        <section className="mx-auto mt-10 grid w-[min(100%,76rem)] gap-4 px-5 md:grid-cols-2 md:px-8">
-          <UploadVaultPreview />
-          <MediaGalleryPreview items={mockContributions} />
-        </section>
+        <LandingShell />
 
         <section className="mx-auto mt-10 w-[min(100%,76rem)] px-5 md:px-8">
           <GlassCard className="p-6 md:p-8">
@@ -29,9 +21,8 @@ export default function HomePage() {
               Built for trust, velocity, and emotional clarity
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200/85 md:text-base">
-              This scaffold introduces the visual and architectural foundation for Supabase-backed uploads,
-              AI-powered narrative generation, and fluid archival exploration. The next step is wiring real auth,
-              storage, and live synthesis pipelines into this UI shell.
+              The platform now supports live Supabase-backed uploads, optimistic memory updates, and dynamic AI
+              narrative generation from real database testimonials.
             </p>
           </GlassCard>
         </section>

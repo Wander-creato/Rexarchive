@@ -1,30 +1,26 @@
-export type MediaType = "photo" | "video" | "audio";
+export type MediaType = "image" | "video" | "audio";
 
 export interface MemoryContribution {
   id: string;
-  title: string;
-  contributor: string;
+  createdAt: string;
   mediaType: MediaType;
-  submittedAt: string;
-  description: string;
   mediaUrl: string;
+  thumbnailUrl: string | null;
+  transcript: string | null;
+  userTextTestimonial: string | null;
+  metadata: Record<string, unknown>;
+  isOptimistic?: boolean;
 }
 
-export interface NarrativeTheme {
+export interface NarrativeChapter {
   id: string;
-  label: string;
-  confidence: number;
-}
-
-export interface StorylineSegment {
-  id: string;
-  anchorYear: number;
   title: string;
-  summary: string;
-  linkedMemoryIds: string[];
+  body: string;
+  mediaIds: string[];
 }
 
 export interface NarrativeFresco {
-  themes: NarrativeTheme[];
-  storyline: StorylineSegment[];
+  title: string;
+  fullNarrative: string;
+  chapters: NarrativeChapter[];
 }

@@ -1,82 +1,212 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Mic, PlayCircle, Sparkles, Tags } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { GlassCard } from "@/components/ui/glass-card";
-import type { MediaType, MemoryContribution, NarrativeTheme, StorylineSegment } from "@/types/narrative";
+import { playUiSound } from "@/lib/sound";
+import type { MemoryContribution, NarrativeFresco } from "@/types/narrative";
 
 interface FrescoRibbonProps {
-  contributions: MemoryContribution[];
-  themes: NarrativeTheme[];
-  storyline: StorylineSegment[];
+  memories: MemoryContribution[];
+  onHighlightMedia: (memoryIds: string[]) => void;
 }
 
-function mediaTypeIcon(mediaType: MediaType) {
-  if (mediaType === "audio") return <Mic className="size-4" />;
-  if (mediaType === "video") return <PlayCircle className="size-4" />;
-  return <Sparkles className="size-4" />;
+interface FrescoResponse {
+  fresco: NarrativeFresco;
 }
 
-export function FrescoRibbon({ contributions, storyline, themes }: FrescoRibbonProps) {
+export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(12);
+  const [fresco, setFresco] = useState<NarrativeFresco | null>(null);
+  const [activeChapterIndex, setActiveChapterIndex] = useState(0);
+  const [typedBody, setTypedBody] = useState("");
+
+  useEffect(() => {
+    let isCancelled = false;
+    const progressTimer = window.setInterval(() => {
+      setLoadingProgress((current) => Math.min(current + 6, 88));
+    }, 220);
+
+    const loadFresco = async () => {
+      try {
+        const response = await fetch("/api/fresco", { method: "GET", cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("Fresco generation failed.");
+        }
+
+        const payload = (await response.json()) as FrescoResponse;
+        if (isCancelled) return;
+        setFresco(payload.fresco);
+        setLoadingProgress(100);
+      } catch {
+        if (isCancelled) return;
+        setFresco({
+          title: "Fallback Narrative Fresco",
+          fullNarrative:
+            "Memories continue to gather, forming a living archive where voices and visuals reconnect across generations.",
+          chapters: [
+            {
+              id: "chapter-1",
+              title: "Origins",
+              body: "Early memories reveal a community archiving identity through moments of collective care.",
+              mediaIds: memories.slice(0, 2).map((entry) => entry.id),
+            },
+            {
+              id: "chapter-2",
+              title: "Transmission",
+              body: "Audio and visuals carry stories forward, turning individual recollections into shared testimony.",
+              mediaIds: memories.slice(1, 3).map((entry) => entry.id),
+            },
+            {
+              id: "chapter-3",
+              title: "Continuity",
+              body: "Each new upload extends the archive into a living narrative that remains open to future voices.",
+              mediaIds: memories.slice(2, 4).map((entry) => entry.id),
+            },
+          ],
+        });
+      } finally {
+        window.clearInterval(progressTimer);
+        if (!isCancelled) {
+          setTimeout(() => setIsLoading(false), 240);
+        }
+      }
+    };
+
+    void loadFresco();
+    return () => {
+      isCancelled = true;
+      window.clearInterval(progressTimer);
+    };
+  }, [memories]);
+
+  const activeChapter = useMemo(
+    () => fresco?.chapters?.[activeChapterIndex] ?? null,
+    [activeChapterIndex, fresco],
+  );
+
+  useEffect(() => {
+    if (!activeChapter) {
+      setTypedBody("");
+      onHighlightMedia([]);
+      return;
+    }
+
+    onHighlightMedia(activeChapter.mediaIds);
+    let cursor = 0;
+    setTypedBody("");
+    const typeTimer = window.setInterval(() => {
+      cursor = Math.min(cursor + 3, activeChapter.body.length);
+      setTypedBody(activeChapter.body.slice(0, cursor));
+      if (cursor >= activeChapter.body.length) {
+        window.clearInterval(typeTimer);
+      }
+    }, 20);
+
+    return () => window.clearInterval(typeTimer);
+  }, [activeChapter, onHighlightMedia]);
+
+  function switchChapter(direction: "prev" | "next") {
+    if (!fresco) return;
+    playUiSound("fresco-navigate");
+    setActiveChapterIndex((current) => {
+      const nextIndex = direction === "next" ? current + 1 : current - 1;
+      if (nextIndex < 0) return fresco.chapters.length - 1;
+      if (nextIndex >= fresco.chapters.length) return 0;
+      return nextIndex;
+    });
+  }
+
   return (
     <section className="mx-auto mt-10 w-[min(100%,76rem)] px-5 md:px-8">
       <GlassCard className="p-5 md:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-teal-200/80">Narrative Layer</p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-100 md:text-3xl">AI Narrative Fresco</h2>
+        {isLoading ? (
+          <div className="flex min-h-56 flex-col items-center justify-center gap-4 text-center">
+            <div className="relative flex size-20 items-center justify-center">
+              <div className="absolute inset-0 rounded-full border border-amber-300/25" />
+              <motion.div
+                className="absolute inset-0 rounded-full border-2 border-amber-300"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                style={{
+                  clipPath: `inset(${Math.max(0, 100 - loadingProgress)}% 0 0 0)`,
+                  boxShadow: "0 0 26px rgba(245, 158, 11, 0.6)",
+                }}
+              />
+              <span className="text-xs font-semibold text-amber-100">{loadingProgress}%</span>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-teal-200/80">Synthesizing narrative</p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-50">Generating your History...</h2>
+            </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {themes.map((theme) => (
-              <span
-                key={theme.id}
-                className="inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-100"
-              >
-                <Tags className="size-3.5" />
-                {theme.label}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="fresco-scroll relative mt-6 overflow-x-auto pb-4">
-          <div className="absolute top-[5.35rem] left-4 right-4 h-px bg-gradient-to-r from-transparent via-teal-300/45 to-transparent" />
-          <div className="flex min-w-max items-start gap-4">
-            {storyline.map((segment, index) => {
-              const firstMemoryId = segment.linkedMemoryIds[0];
-              const linkedMemory = contributions.find((entry) => entry.id === firstMemoryId);
-
-              return (
-                <motion.article
-                  key={segment.id}
-                  initial={{ opacity: 0, x: 18 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, amount: 0.3 }}
-                  transition={{ duration: 0.45, delay: index * 0.08 }}
-                  className="group w-72 shrink-0 rounded-2xl border border-white/10 bg-[#111f39]/80 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-amber-300/35"
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-teal-200/80">Narrative Layer</p>
+                <h2 className="mt-1 text-2xl font-semibold text-slate-100 md:text-3xl">
+                  {fresco?.title ?? "AI Narrative Fresco"}
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => switchChapter("prev")}
+                  className="rounded-xl border border-white/15 bg-white/5 p-2 text-slate-200 transition-colors hover:border-amber-300/50 hover:text-amber-100"
                 >
-                  <p className="text-xs font-medium tracking-[0.16em] text-teal-200/90 uppercase">{segment.anchorYear}</p>
-                  <h3 className="mt-2 text-lg font-semibold text-slate-50">{segment.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-200/80">{segment.summary}</p>
+                  <ChevronLeft className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchChapter("next")}
+                  className="rounded-xl border border-white/15 bg-white/5 p-2 text-slate-200 transition-colors hover:border-amber-300/50 hover:text-amber-100"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </div>
+            </div>
 
-                  {linkedMemory ? (
-                    <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3">
-                      <p className="text-[11px] text-slate-300/80 uppercase tracking-[0.14em]">Linked Memory</p>
-                      <p className="mt-1 text-sm font-medium text-slate-100">{linkedMemory.title}</p>
-                      <p className="mt-1 text-xs text-slate-300/80">{linkedMemory.contributor}</p>
-                      <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-teal-300/15 px-2.5 py-1 text-[11px] text-teal-100">
-                        {mediaTypeIcon(linkedMemory.mediaType)}
-                        {linkedMemory.mediaType}
+            <p className="mt-3 text-sm leading-7 text-slate-200/85">{fresco?.fullNarrative}</p>
+
+            <AnimatePresence mode="wait">
+              {activeChapter ? (
+                <motion.article
+                  key={activeChapter.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="mt-5 rounded-2xl border border-white/10 bg-[#111f39]/80 p-4"
+                >
+                  <p className="inline-flex items-center gap-2 rounded-full border border-teal-300/35 bg-teal-300/10 px-2.5 py-1 text-xs text-teal-100">
+                    <Sparkles className="size-3.5" />
+                    Thematic Chapter
+                  </p>
+                  <h3 className="mt-2 text-lg font-semibold text-slate-50">{activeChapter.title}</h3>
+                  <p className="mt-2 min-h-20 text-sm leading-6 text-slate-200/85">
+                    {typedBody}
+                    <span className="ml-0.5 inline-block h-4 w-px animate-pulse bg-amber-300/90 align-middle" />
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {activeChapter.mediaIds.map((mediaId) => (
+                      <span
+                        key={mediaId}
+                        className="inline-flex items-center gap-1 rounded-full border border-amber-300/30 bg-amber-500/10 px-2.5 py-1 text-[11px] text-amber-100"
+                      >
+                        Media {mediaId.slice(0, 8)}
                       </span>
-                    </div>
-                  ) : null}
+                    ))}
+                  </div>
                 </motion.article>
-              );
-            })}
-          </div>
-        </div>
+              ) : null}
+            </AnimatePresence>
+          </>
+        )}
       </GlassCard>
     </section>
   );
