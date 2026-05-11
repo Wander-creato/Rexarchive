@@ -8,7 +8,7 @@ export function getSupabaseServerClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Missing Supabase server credentials in environment variables.");
+    throw new Error("Identifiants Supabase serveur manquants dans les variables d'environnement.");
   }
 
   return createClient<Database>(supabaseUrl, supabaseKey, {

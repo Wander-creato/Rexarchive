@@ -14,13 +14,17 @@ interface GenerateNarrativeOptions {
 
 interface TestimonialRow {
   id: string;
-  user_text_testimonial: string | null;
-  transcript: string | null;
+  title: string | null;
+  description: string | null;
+  category: string | null;
+  type: string | null;
+  url: string | null;
   created_at: string;
 }
 
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const EMPTY_PLACEHOLDER = "Emplacement vide - En attente de contenu";
 
 function safeJsonParse(payload: string): NarrativeFresco | null {
   try {
@@ -31,21 +35,20 @@ function safeJsonParse(payload: string): NarrativeFresco | null {
 }
 
 function localFallback(rows: TestimonialRow[]): NarrativeFresco {
-  const snippets = rows.slice(0, 3).map((entry) => entry.user_text_testimonial ?? entry.transcript ?? "");
+  const snippets = rows
+    .slice(0, 3)
+    .map((entry) => `${entry.title ?? EMPTY_PLACEHOLDER} — ${entry.description ?? EMPTY_PLACEHOLDER}`);
   const chapterTitles = ["Les Origines", "L'Âge d'Or", "La Renaissance"];
   const chapters = chapterTitles.map((title, index) => ({
     id: `chapitre-${index + 1}`,
     title,
-    body:
-      snippets[index]?.slice(0, 240) ||
-      "Les souvenirs de la communauté continuent d'alimenter une mémoire commune en perpétuelle évolution.",
+    body: snippets[index]?.slice(0, 240) || EMPTY_PLACEHOLDER,
     mediaIds: [rows[index]?.id].filter(Boolean),
   }));
 
   return {
-    title: "La fresque vivante du Rex",
-    fullNarrative:
-      "Du premier atelier aux nouveaux dépôts, les archives du Rex racontent une mémoire collective qui se construit, se transmet et se réinvente. Chaque témoignage ajoute une voix à ce patrimoine vivant.",
+    title: "Fresque narrative du Rex",
+    fullNarrative: EMPTY_PLACEHOLDER,
     chapters,
   };
 }
@@ -54,8 +57,7 @@ async function fetchRecentTestimonials(limit: number) {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("memories")
-    .select("id,user_text_testimonial,transcript,created_at")
-    .or("user_text_testimonial.not.is.null,transcript.not.is.null")
+    .select("id,title,description,category,type,url,created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -69,8 +71,10 @@ async function fetchRecentTestimonials(limit: number) {
 function buildPrompt(rows: TestimonialRow[]) {
   const entries = rows
     .map((row, index) => {
-      const text = row.user_text_testimonial ?? row.transcript ?? "";
-      return `${index + 1}. id=${row.id} | ${text}`;
+      const text = row.description ?? EMPTY_PLACEHOLDER;
+      return `${index + 1}. id=${row.id} | titre=${row.title ?? EMPTY_PLACEHOLDER} | catégorie=${
+        row.category ?? EMPTY_PLACEHOLDER
+      } | type=${row.type ?? EMPTY_PLACEHOLDER} | texte=${text}`;
     })
     .join("\n");
 

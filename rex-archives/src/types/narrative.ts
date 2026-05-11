@@ -1,14 +1,13 @@
-export type MediaType = "image" | "video" | "audio";
+export type MediaType = "photo" | "video" | "audio";
 
 export interface MemoryContribution {
   id: string;
   createdAt: string;
-  mediaType: MediaType;
-  mediaUrl: string;
-  thumbnailUrl: string | null;
-  transcript: string | null;
-  userTextTestimonial: string | null;
-  metadata: Record<string, unknown>;
+  type: MediaType;
+  url: string;
+  title: string | null;
+  description: string | null;
+  category: string | null;
   isOptimistic?: boolean;
 }
 

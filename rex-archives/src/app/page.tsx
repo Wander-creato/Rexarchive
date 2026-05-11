@@ -1,33 +1,54 @@
+import Link from "next/link";
+
 import { ImmersiveHero } from "@/components/landing/immersive-hero";
-import { LandingShell } from "@/components/landing/landing-shell";
-import { SiteHeader } from "@/components/layout/site-header";
+import { SitePage } from "@/components/layout/site-page";
 import { GlassCard } from "@/components/ui/glass-card";
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-[#0f172a]">
-      <div className="film-grain-layer" aria-hidden />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(17,94,89,0.25),transparent_45%),radial-gradient(circle_at_90%_20%,rgba(245,158,11,0.18),transparent_40%)]" />
-
-      <SiteHeader />
-
-      <main className="pb-14">
+    <SitePage
+      title="Plateforme patrimoniale vivante"
+      subtitle="Chaque route est opérationnelle : la fresque IA, le coffre d'importation et les archives connectées à Supabase."
+    >
+      <section className="pb-14">
         <ImmersiveHero />
-        <LandingShell />
 
-        <section className="mx-auto mt-10 w-[min(100%,76rem)] px-5 md:px-8">
-          <GlassCard className="p-6 md:p-8">
-            <p className="text-xs uppercase tracking-[0.2em] text-teal-200/80">Vision de la plateforme</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-100 md:text-3xl">
-              Conçue pour la confiance, la fluidité et l&apos;émotion
-            </h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200/85 md:text-base">
-              La plateforme prend désormais en charge l&apos;importation en direct via Supabase, les mises à jour
-              optimistes de la galerie et la génération dynamique d&apos;une fresque IA à partir de témoignages réels.
-            </p>
+        <section className="mt-10 grid gap-4 md:grid-cols-3">
+          <GlassCard className="p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-teal-200/80">Route</p>
+            <h2 className="mt-2 text-xl font-semibold text-slate-100">/fresque</h2>
+            <p className="mt-2 text-sm text-slate-300/85">Narration IA immersive avec effet machine à écrire.</p>
+            <Link
+              href="/fresque"
+              className="mt-4 inline-flex rounded-xl border border-amber-300/35 px-3 py-2 text-xs font-medium text-amber-100 transition-colors hover:bg-amber-500/15"
+            >
+              Ouvrir la fresque
+            </Link>
+          </GlassCard>
+          <GlassCard className="p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-teal-200/80">Route</p>
+            <h2 className="mt-2 text-xl font-semibold text-slate-100">/le-coffre</h2>
+            <p className="mt-2 text-sm text-slate-300/85">Centre d&apos;importation multi-étapes connecté au bucket Supabase.</p>
+            <Link
+              href="/le-coffre"
+              className="mt-4 inline-flex rounded-xl border border-amber-300/35 px-3 py-2 text-xs font-medium text-amber-100 transition-colors hover:bg-amber-500/15"
+            >
+              Ouvrir le coffre
+            </Link>
+          </GlassCard>
+          <GlassCard className="p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-teal-200/80">Route</p>
+            <h2 className="mt-2 text-xl font-semibold text-slate-100">/archives</h2>
+            <p className="mt-2 text-sm text-slate-300/85">Galerie recherchable en temps réel, filtrée par type de média.</p>
+            <Link
+              href="/archives"
+              className="mt-4 inline-flex rounded-xl border border-amber-300/35 px-3 py-2 text-xs font-medium text-amber-100 transition-colors hover:bg-amber-500/15"
+            >
+              Explorer les archives
+            </Link>
           </GlassCard>
         </section>
-      </main>
-    </div>
+      </section>
+    </SitePage>
   );
 }

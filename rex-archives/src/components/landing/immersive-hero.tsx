@@ -2,13 +2,8 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, Sparkles, UploadCloud } from "lucide-react";
+import Link from "next/link";
 import { useRef } from "react";
-
-const backdropImages = [
-  "https://images.unsplash.com/photo-1457694587812-e8bf29a43845?auto=format&fit=crop&w=1800&q=80",
-  "https://images.unsplash.com/photo-1461360370896-922624d12aa1?auto=format&fit=crop&w=1800&q=80",
-  "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=1800&q=80",
-];
 
 export function ImmersiveHero() {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -24,21 +19,12 @@ export function ImmersiveHero() {
   return (
     <section ref={sectionRef} className="relative isolate overflow-hidden px-5 pt-12 md:px-8 md:pt-16">
       <motion.div style={{ y: slowParallax }} className="absolute inset-0 -z-20">
-        <div
-          className="h-full w-full bg-cover bg-center opacity-40 blur-[2px]"
-          style={{ backgroundImage: `url(${backdropImages[0]})` }}
-        />
+        <div className="h-full w-full bg-[radial-gradient(circle_at_20%_30%,rgba(17,94,89,0.35),transparent_55%),radial-gradient(circle_at_80%_20%,rgba(245,158,11,0.28),transparent_50%)] opacity-70 blur-[2px]" />
       </motion.div>
       <motion.div style={{ y: fastParallax }} className="absolute inset-0 -z-10">
-        <div
-          className="h-full w-full bg-cover bg-center opacity-30 blur-md"
-          style={{ backgroundImage: `url(${backdropImages[1]})` }}
-        />
+        <div className="h-full w-full bg-[radial-gradient(circle_at_60%_50%,rgba(15,23,42,0.2),transparent_65%),linear-gradient(135deg,rgba(17,94,89,0.22),transparent)] opacity-60 blur-md" />
       </motion.div>
-      <div
-        className="absolute inset-0 -z-10 bg-cover bg-center opacity-20 blur-xl"
-        style={{ backgroundImage: `url(${backdropImages[2]})` }}
-      />
+      <div className="absolute inset-0 -z-10 opacity-30 blur-xl bg-[radial-gradient(circle_at_50%_60%,rgba(245,158,11,0.2),transparent_65%)]" />
 
       <motion.div
         style={{ opacity: glowOpacity }}
@@ -83,20 +69,20 @@ export function ImmersiveHero() {
           transition={{ delay: 0.34, duration: 0.6 }}
           className="mt-7 flex flex-wrap items-center gap-3"
         >
-          <button
-            type="button"
+          <Link
+            href="/le-coffre"
             className="group inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-950 transition-all duration-300 hover:-translate-y-1 hover:bg-amber-400"
           >
             Déposer un souvenir
             <UploadCloud className="size-4 transition-transform group-hover:translate-x-1" />
-          </button>
-          <button
-            type="button"
+          </Link>
+          <Link
+            href="/fresque"
             className="group inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-100 transition-all duration-300 hover:-translate-y-1 hover:border-teal-300/50 hover:bg-white/10"
           >
             Explorer la fresque
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-          </button>
+          </Link>
         </motion.div>
       </div>
     </section>

@@ -6,6 +6,7 @@ import { CheckCircle2, ChevronLeft, ChevronRight, FileText, LoaderCircle, Upload
 import { useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { GlassCard } from "@/components/ui/glass-card";
@@ -18,15 +19,15 @@ import type { Database } from "@/types/database";
 import type { MediaType, MemoryContribution } from "@/types/narrative";
 
 const steps = [
-  { id: "step-1", title: "Importation", detail: "Glissez vos médias vers l'espace sécurisé", icon: Upload },
-  { id: "step-2", title: "Contexte", detail: "Ajoutez le récit et les détails du témoignage", icon: FileText },
-  { id: "step-3", title: "Validation", detail: "Vérifiez avant publication", icon: Video },
+  { id: "step-1", title: "Fichier", detail: "Ajoutez une photo, une vidéo ou un audio", icon: Upload },
+  { id: "step-2", title: "Description", detail: "Donnez du contexte à votre souvenir", icon: FileText },
+  { id: "step-3", title: "Catégorie", detail: "Finalisez l'archivage dans le bon thème", icon: Video },
 ];
 
 const vaultSchema = z.object({
-  type: z.enum(["image", "video", "audio"]),
-  userTextTestimonial: z.string().min(12, "Veuillez saisir au moins 12 caractères."),
-  transcript: z.string().optional(),
+  title: z.string().min(3, "Veuillez saisir un titre d'au moins 3 caractères."),
+  description: z.string().min(12, "Veuillez saisir au moins 12 caractères."),
+  category: z.string().min(2, "Indiquez une catégorie."),
 });
 
 type VaultValues = z.infer<typeof vaultSchema>;
@@ -40,7 +41,7 @@ function detectMediaType(file: File): MediaType {
   if (file.type.startsWith("audio/")) {
     return "audio";
   }
-  return "image";
+  return "photo";
 }
 
 function fileLabel(file: File | null) {
@@ -51,15 +52,10 @@ function fileLabel(file: File | null) {
   return `${file.name} (${sizeMb} MB)`;
 }
 
-function mediaTypeLabel(mediaType: MediaType) {
-  if (mediaType === "video") return "vidéo";
-  if (mediaType === "audio") return "audio";
-  return "image";
-}
-
 export function UploadVaultPreview() {
   const [stepIndex, setStepIndex] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedType, setSelectedType] = useState<MediaType>("photo");
   const uploadStatus = useMemoryStore((state) => state.uploadStatus);
   const setUploadStatus = useMemoryStore((state) => state.setUploadStatus);
   const addOptimisticMemory = useMemoryStore((state) => state.addOptimisticMemory);
@@ -69,20 +65,17 @@ export function UploadVaultPreview() {
   const {
     register,
     watch,
-    setValue,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<VaultValues>({
     resolver: zodResolver(vaultSchema),
     defaultValues: {
-      type: "image",
-      userTextTestimonial: "",
-      transcript: "",
+      title: "",
+      description: "",
+      category: "",
     },
   });
-
-  const selectedType = watch("type");
 
   const dropzone = useDropzone({
     multiple: false,
@@ -95,7 +88,7 @@ export function UploadVaultPreview() {
       const [file] = acceptedFiles;
       if (!file) return;
       setSelectedFile(file);
-      setValue("type", detectMediaType(file), { shouldDirty: true, shouldValidate: true });
+      setSelectedType(detectMediaType(file));
     },
     onDropRejected: () => {
       setUploadStatus({
@@ -139,12 +132,11 @@ export function UploadVaultPreview() {
       const optimisticMemory: MemoryContribution = {
         id: optimisticId,
         createdAt: new Date().toISOString(),
-        mediaType: values.type,
-        mediaUrl: localObjectUrl,
-        thumbnailUrl: values.type === "image" ? localObjectUrl : null,
-        transcript: values.transcript ?? null,
-        userTextTestimonial: values.userTextTestimonial,
-        metadata: { fileName: selectedFile.name, optimistic: true },
+        type: selectedType,
+        url: localObjectUrl,
+        title: values.title,
+        description: values.description,
+        category: values.category,
         isOptimistic: true,
       };
 
@@ -163,16 +155,11 @@ export function UploadVaultPreview() {
 
       const { data: publicAsset } = supabase.storage.from("vault").getPublicUrl(storagePath);
       const insertPayload: MemoryInsert = {
-        type: values.type,
-        media_url: publicAsset.publicUrl,
-        thumbnail_url: values.type === "image" ? publicAsset.publicUrl : null,
-        transcript: values.transcript || null,
-        user_text_testimonial: values.userTextTestimonial,
-        metadata: {
-          fileName: selectedFile.name,
-          size: selectedFile.size,
-          mimeType: selectedFile.type,
-        },
+        type: selectedType,
+        url: publicAsset.publicUrl,
+        title: values.title,
+        description: values.description,
+        category: values.category,
       };
 
       const { data: insertedRows, error: insertError } = await supabase
@@ -196,9 +183,11 @@ export function UploadVaultPreview() {
         progress: 100,
         message: "Souvenir archivé avec succès.",
       });
+      toast.success("Souvenir publié dans les archives.");
       playUiSound("upload-complete");
-      reset({ type: "image", userTextTestimonial: "", transcript: "" });
+      reset({ title: "", description: "", category: "" });
       setSelectedFile(null);
+      setSelectedType("photo");
       setStepIndex(0);
     } catch (error) {
       removeMemory(optimisticId);
@@ -207,6 +196,7 @@ export function UploadVaultPreview() {
         progress: 0,
         message: error instanceof Error ? error.message : "Échec de l'importation.",
       });
+      toast.error("L'importation a échoué. Vérifiez la configuration Supabase.");
     } finally {
       window.clearInterval(progressTimer);
       if (localObjectUrl) {
@@ -278,33 +268,24 @@ export function UploadVaultPreview() {
 
         {stepIndex === 1 ? (
           <div className="space-y-3 rounded-2xl border border-white/10 bg-[#0f172a]/80 p-4">
-            <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Type de média</label>
-            <select
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none ring-amber-300/30 focus:ring-2"
-              {...register("type")}
-            >
-              <option value="image">Image</option>
-              <option value="video">Vidéo</option>
-              <option value="audio">Audio</option>
-            </select>
-            <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Témoignage</label>
+            <p className="rounded-xl border border-amber-300/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+              Type détecté : {selectedType}
+            </p>
+            <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Titre du souvenir</label>
+            <input
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none ring-amber-300/30 placeholder:text-slate-400 focus:ring-2"
+              placeholder="Ex. Soirée de restauration des archives"
+              {...register("title")}
+            />
+            {errors.title ? <p className="text-xs text-rose-300">{errors.title.message}</p> : null}
+            <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Description</label>
             <textarea
               className="min-h-24 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none ring-amber-300/30 placeholder:text-slate-400 focus:ring-2"
               placeholder="Décrivez le souvenir, son contexte et son importance."
-              {...register("userTextTestimonial")}
+              {...register("description")}
             />
-            {errors.userTextTestimonial ? (
-              <p className="text-xs text-rose-300">{errors.userTextTestimonial.message}</p>
-            ) : null}
-            {selectedType === "audio" ? (
-              <>
-                <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Transcription</label>
-                <textarea
-                  className="min-h-20 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none ring-amber-300/30 placeholder:text-slate-400 focus:ring-2"
-                  placeholder="Transcription optionnelle du témoignage audio."
-                  {...register("transcript")}
-                />
-              </>
+            {errors.description ? (
+              <p className="text-xs text-rose-300">{errors.description.message}</p>
             ) : null}
           </div>
         ) : null}
@@ -317,11 +298,21 @@ export function UploadVaultPreview() {
                 <span className="text-slate-400">Fichier :</span> {fileLabel(selectedFile)}
               </p>
               <p>
-                <span className="text-slate-400">Type :</span> {mediaTypeLabel(selectedType)}
+                <span className="text-slate-400">Type :</span> {selectedType}
+              </p>
+              <p>
+                <span className="text-slate-400">Titre :</span> {watch("title") || "Emplacement vide - En attente de contenu"}
               </p>
               <p className="text-xs text-slate-300/85">
-                {watch("userTextTestimonial") || "Aucun témoignage rédigé pour l'instant."}
+                {watch("description") || "Emplacement vide - En attente de contenu"}
               </p>
+              <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Catégorie</label>
+              <input
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none ring-amber-300/30 placeholder:text-slate-400 focus:ring-2"
+                placeholder="Ex. Transmission, Commémoration, Vie quotidienne"
+                {...register("category")}
+              />
+              {errors.category ? <p className="text-xs text-rose-300">{errors.category.message}</p> : null}
             </div>
           </div>
         ) : null}

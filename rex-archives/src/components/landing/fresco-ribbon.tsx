@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { GlassCard } from "@/components/ui/glass-card";
@@ -16,6 +17,8 @@ interface FrescoRibbonProps {
 interface FrescoResponse {
   fresco: NarrativeFresco;
 }
+
+const EMPTY_PLACEHOLDER = "Emplacement vide - En attente de contenu";
 
 export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) {
   const [isLoading, setIsLoading] = useState(true);
@@ -44,26 +47,25 @@ export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) 
       } catch {
         if (isCancelled) return;
         setFresco({
-          title: "Fresque narrative de secours",
-          fullNarrative:
-            "Les souvenirs continuent d'affluer et composent une archive vivante, où les voix et les images se répondent au fil des générations.",
+          title: "Fresque narrative",
+          fullNarrative: EMPTY_PLACEHOLDER,
           chapters: [
             {
               id: "chapter-1",
               title: "Les Origines",
-              body: "Les premiers fragments racontent une communauté qui protège son identité par des gestes de transmission.",
+              body: EMPTY_PLACEHOLDER,
               mediaIds: memories.slice(0, 2).map((entry) => entry.id),
             },
             {
               id: "chapter-2",
               title: "L'Âge d'Or",
-              body: "Les images et les voix se multiplient, transformant les souvenirs individuels en héritage collectif.",
+              body: EMPTY_PLACEHOLDER,
               mediaIds: memories.slice(1, 3).map((entry) => entry.id),
             },
             {
               id: "chapter-3",
               title: "La Renaissance",
-              body: "Chaque nouveau dépôt relance le récit commun et ouvre l'archive aux voix de demain.",
+              body: EMPTY_PLACEHOLDER,
               mediaIds: memories.slice(2, 4).map((entry) => entry.id),
             },
           ],
@@ -87,6 +89,7 @@ export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) 
     () => fresco?.chapters?.[activeChapterIndex] ?? null,
     [activeChapterIndex, fresco],
   );
+  const hasFrescoData = Boolean(fresco?.chapters?.length);
 
   useEffect(() => {
     if (!activeChapter) {
@@ -145,6 +148,18 @@ export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) 
           </div>
         ) : (
           <>
+            {!hasFrescoData ? (
+              <div className="rounded-2xl border border-amber-300/30 bg-amber-500/10 p-5">
+                <p className="text-sm text-amber-100">{EMPTY_PLACEHOLDER}</p>
+                <Link
+                  href="/le-coffre"
+                  className="mt-3 inline-flex rounded-xl border border-amber-300/40 px-3 py-2 text-xs font-medium text-amber-100 transition-colors hover:bg-amber-500/20"
+                >
+                  Déposer un premier souvenir
+                </Link>
+              </div>
+            ) : null}
+
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-teal-200/80">Couche narrative</p>
@@ -170,7 +185,7 @@ export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) 
               </div>
             </div>
 
-            <p className="mt-3 text-sm leading-7 text-slate-200/85">{fresco?.fullNarrative}</p>
+            <p className="mt-3 text-sm leading-7 text-slate-200/85">{fresco?.fullNarrative || EMPTY_PLACEHOLDER}</p>
 
             <AnimatePresence mode="wait">
               {activeChapter ? (
