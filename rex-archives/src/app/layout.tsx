@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import Script from "next/script";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -22,6 +23,22 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${geistSans.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full font-sans text-slate-100" suppressHydrationWarning>
+        <Script id="sanitize-external-dom-attrs" strategy="beforeInteractive">
+          {`
+            (function () {
+              function clean(target) {
+                if (!target || !target.getAttributeNames) return;
+                target.getAttributeNames().forEach(function (name) {
+                  if (name.indexOf('data-adreal-') === 0) {
+                    target.removeAttribute(name);
+                  }
+                });
+              }
+              clean(document.documentElement);
+              clean(document.body);
+            })();
+          `}
+        </Script>
         {children}
         <Toaster richColors position="top-right" />
       </body>
