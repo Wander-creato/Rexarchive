@@ -39,8 +39,17 @@ const vaultSchema = z.object({
 
 type VaultValues = z.infer<typeof vaultSchema>;
 type MemoryInsert = Database["public"]["Tables"]["memories"]["Insert"];
-type MemoryRow = Database["public"]["Tables"]["memories"]["Row"];
-const STORAGE_BUCKET = "archives";
+const STORAGE_BUCKETS = ["archives", "vault"] as const;
+interface UntypedInsertResult {
+  data: unknown[] | null;
+  error: { message: string } | null;
+}
+
+interface UntypedMemoriesQuery {
+  insert: (payload: unknown) => UntypedMemoriesQuery;
+  select: (columns: string) => UntypedMemoriesQuery;
+  limit: (count: number) => Promise<UntypedInsertResult>;
+}
 
 function detectMediaType(file: File): MediaType {
   if (file.type.startsWith("video/")) {
@@ -64,6 +73,21 @@ function mediaTypeLabel(type: MediaType) {
   if (type === "video") return "vidéo";
   if (type === "audio") return "vocal";
   return "photo";
+}
+
+function canRetryWithLegacySchema(message: string) {
+  return (
+    message.includes('column "url"') ||
+    message.includes('column "title"') ||
+    message.includes('column "description"') ||
+    message.includes('column "category"') ||
+    message.includes("check constraint")
+  );
+}
+
+function canFallbackToOtherBucket(message: string) {
+  const lowercase = message.toLowerCase();
+  return lowercase.includes("bucket") || lowercase.includes("not found") || lowercase.includes("does not exist");
 }
 
 export function UploadVaultPreview() {
@@ -168,17 +192,34 @@ export function UploadVaultPreview() {
       addOptimisticMemory(optimisticMemory);
 
       const storagePath = `memories/${Date.now()}-${selectedFile.name.replace(/\s+/g, "-").toLowerCase()}`;
-      const uploadResult = await supabase.storage.from(STORAGE_BUCKET).upload(storagePath, selectedFile, {
-        cacheControl: "3600",
-        upsert: false,
-        contentType: selectedFile.type,
-      });
+      let selectedBucket: (typeof STORAGE_BUCKETS)[number] = STORAGE_BUCKETS[0];
+      let uploadSucceeded = false;
+      let latestUploadError = "Erreur inconnue lors de l'envoi du média.";
 
-      if (uploadResult.error) {
-        throw new Error(`Échec de l'envoi dans le bucket "${STORAGE_BUCKET}" : ${uploadResult.error.message}`);
+      for (const bucket of STORAGE_BUCKETS) {
+        const uploadResult = await supabase.storage.from(bucket).upload(storagePath, selectedFile, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: selectedFile.type,
+        });
+
+        if (!uploadResult.error) {
+          selectedBucket = bucket;
+          uploadSucceeded = true;
+          break;
+        }
+
+        latestUploadError = uploadResult.error.message;
+        if (!canFallbackToOtherBucket(uploadResult.error.message)) {
+          break;
+        }
       }
 
-      const { data: publicAsset } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
+      if (!uploadSucceeded) {
+        throw new Error(`Échec de l'envoi vers Supabase Storage : ${latestUploadError}`);
+      }
+
+      const { data: publicAsset } = supabase.storage.from(selectedBucket).getPublicUrl(storagePath);
       if (!publicAsset.publicUrl) {
         throw new Error("Impossible de générer l'URL publique du média.");
       }
@@ -191,17 +232,42 @@ export function UploadVaultPreview() {
         category: normalizedCategory,
       };
 
-      const { data: insertedRows, error: insertError } = await supabase
+      const { data: insertedRows, error: initialInsertError } = await supabase
         .from("memories")
         .insert(insertPayload)
         .select("*")
         .limit(1);
+      let insertErrorMessage = initialInsertError?.message ?? null;
+      let insertedRowCandidate: unknown = insertedRows?.[0];
 
-      if (insertError) {
-        throw insertError;
+      if (initialInsertError && canRetryWithLegacySchema(initialInsertError.message)) {
+        const legacyPayload = {
+          type: selectedType === "photo" ? "image" : selectedType,
+          media_url: publicAsset.publicUrl,
+          thumbnail_url: selectedType === "photo" ? publicAsset.publicUrl : null,
+          transcript: null,
+          user_text_testimonial: values.description,
+          metadata: {
+            title: values.title,
+            category: normalizedCategory,
+          },
+        };
+
+        const legacyResult = await (supabase as unknown as { from: (table: string) => UntypedMemoriesQuery })
+          .from("memories")
+          .insert(legacyPayload)
+          .select("*")
+          .limit(1);
+
+        insertErrorMessage = legacyResult.error?.message ?? null;
+        insertedRowCandidate = legacyResult.data?.[0];
       }
 
-      const insertedRow = insertedRows?.[0] as MemoryRow | undefined;
+      if (insertErrorMessage) {
+        throw new Error(`Échec de l'insertion en base : ${insertErrorMessage}`);
+      }
+
+      const insertedRow = insertedRowCandidate;
       if (!insertedRow) {
         throw new Error("Importation terminée, mais aucune ligne mémoire n'a été renvoyée.");
       }
