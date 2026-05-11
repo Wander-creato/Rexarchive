@@ -10,6 +10,7 @@ interface GenerateNarrativeOptions {
   provider?: AIProvider;
   model?: string;
   limit?: number;
+  category?: string;
 }
 
 interface TestimonialRow {
@@ -53,13 +54,19 @@ function localFallback(rows: TestimonialRow[]): NarrativeFresco {
   };
 }
 
-async function fetchRecentTestimonials(limit: number) {
+async function fetchRecentTestimonials(limit: number, category?: string) {
   const supabase = getSupabaseServerClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("memories")
     .select("id,title,description,category,type,url,created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  if (category && category !== "Toutes") {
+    query = query.eq("category", category);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`Impossible de récupérer les témoignages : ${error.message}`);
@@ -195,7 +202,7 @@ export async function generateNarrativeFresco(
       : process.env.OPENAI_MODEL ?? "gpt-4o");
   const limit = Math.min(Math.max(options.limit ?? 15, 10), 20);
 
-  const rows = await fetchRecentTestimonials(limit);
+  const rows = await fetchRecentTestimonials(limit, options.category);
   if (rows.length === 0) {
     return { fresco: localFallback([]), sourceRows: [] };
   }

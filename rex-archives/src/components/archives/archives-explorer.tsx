@@ -57,6 +57,20 @@ export function ArchivesExplorer() {
     return () => window.clearTimeout(timeout);
   }, [activeFilter, loadMemories, search]);
 
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    const channel = supabase
+      .channel("archives-memories-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "memories" }, () => {
+        void loadMemories(search, activeFilter);
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [activeFilter, loadMemories, search]);
+
   return (
     <section className="mt-8 space-y-4">
       <GlassCard className="p-4">

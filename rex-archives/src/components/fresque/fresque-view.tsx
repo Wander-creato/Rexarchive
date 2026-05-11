@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { MEMORY_CATEGORIES, type MemoryCategory } from "@/constants/memory-categories";
 import { FrescoRibbon } from "@/components/landing/fresco-ribbon";
 import { MediaGalleryPreview } from "@/components/landing/media-gallery-preview";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -16,6 +17,7 @@ type MemoryRow = Database["public"]["Tables"]["memories"]["Row"];
 export function FresqueView() {
   const [memories, setMemories] = useState<MemoryContribution[]>([]);
   const [activeMediaIds, setActiveMediaIds] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState<MemoryCategory | "Toutes">("Toutes");
   const [isLoading, setIsLoading] = useState(true);
 
   const loadMemories = useCallback(async () => {
@@ -44,6 +46,29 @@ export function FresqueView() {
     void loadMemories();
   }, [loadMemories]);
 
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    const channel = supabase
+      .channel("fresque-memories-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "memories" },
+        () => void loadMemories(),
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [loadMemories]);
+
+  const filteredMemories = useMemo(() => {
+    if (activeCategory === "Toutes") {
+      return memories;
+    }
+    return memories.filter((memory) => memory.category === activeCategory);
+  }, [activeCategory, memories]);
+
   if (isLoading) {
     return (
       <section className="mt-8">
@@ -54,7 +79,7 @@ export function FresqueView() {
     );
   }
 
-  if (memories.length === 0) {
+  if (filteredMemories.length === 0) {
     return (
       <section className="mt-10">
         <GlassCard className="border-amber-300/25 bg-amber-500/10 p-6">
@@ -72,9 +97,43 @@ export function FresqueView() {
 
   return (
     <>
-      <FrescoRibbon memories={memories} onHighlightMedia={setActiveMediaIds} />
       <section className="mt-8">
-        <MediaGalleryPreview items={memories} highlightedMediaIds={activeMediaIds} showHeader={false} />
+        <GlassCard className="p-5">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Filtrer la fresque par catégorie</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveCategory("Toutes")}
+              className={[
+                "rounded-full border px-3 py-1.5 text-xs transition-colors",
+                activeCategory === "Toutes"
+                  ? "border-amber-300/70 bg-amber-500/25 text-amber-100"
+                  : "border-white/10 bg-white/5 text-slate-200 hover:border-amber-300/45",
+              ].join(" ")}
+            >
+              Toutes
+            </button>
+            {MEMORY_CATEGORIES.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setActiveCategory(category)}
+                className={[
+                  "rounded-full border px-3 py-1.5 text-xs transition-colors",
+                  activeCategory === category
+                    ? "border-amber-300/70 bg-amber-500/25 text-amber-100"
+                    : "border-white/10 bg-white/5 text-slate-200 hover:border-amber-300/45",
+                ].join(" ")}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </GlassCard>
+      </section>
+      <FrescoRibbon memories={filteredMemories} onHighlightMedia={setActiveMediaIds} category={activeCategory} />
+      <section className="mt-8">
+        <MediaGalleryPreview items={filteredMemories} highlightedMediaIds={activeMediaIds} showHeader={false} />
       </section>
     </>
   );

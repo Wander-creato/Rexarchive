@@ -1,3 +1,4 @@
+import { normalizeMemoryCategory } from "@/constants/memory-categories";
 import type { Database } from "@/types/database";
 import type { MemoryContribution } from "@/types/narrative";
 
@@ -11,6 +12,6 @@ export function mapMemoryRowToContribution(row: MemoryRow): MemoryContribution {
     url: row.url ?? "",
     title: row.title,
     description: row.description,
-    category: row.category,
+    category: normalizeMemoryCategory(row.category),
   };
 }

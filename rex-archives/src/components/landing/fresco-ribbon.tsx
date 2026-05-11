@@ -12,6 +12,7 @@ import type { MemoryContribution, NarrativeFresco } from "@/types/narrative";
 interface FrescoRibbonProps {
   memories: MemoryContribution[];
   onHighlightMedia: (memoryIds: string[]) => void;
+  category?: string;
 }
 
 interface FrescoResponse {
@@ -20,7 +21,7 @@ interface FrescoResponse {
 
 const EMPTY_PLACEHOLDER = "Emplacement vide - En attente de contenu";
 
-export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) {
+export function FrescoRibbon({ memories, onHighlightMedia, category = "Toutes" }: FrescoRibbonProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(12);
   const [fresco, setFresco] = useState<NarrativeFresco | null>(null);
@@ -35,7 +36,11 @@ export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) 
 
     const loadFresco = async () => {
       try {
-        const response = await fetch("/api/fresco", { method: "GET", cache: "no-store" });
+        const endpoint =
+          category && category !== "Toutes"
+            ? `/api/fresco?category=${encodeURIComponent(category)}`
+            : "/api/fresco";
+        const response = await fetch(endpoint, { method: "GET", cache: "no-store" });
         if (!response.ok) {
           throw new Error("Échec de génération de la fresque.");
         }
@@ -83,7 +88,7 @@ export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) 
       isCancelled = true;
       window.clearInterval(progressTimer);
     };
-  }, [memories]);
+  }, [category, memories]);
 
   const activeChapter = useMemo(
     () => fresco?.chapters?.[activeChapterIndex] ?? null,

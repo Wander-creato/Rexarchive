@@ -4,9 +4,11 @@ import { generateNarrativeFresco } from "@/services/ai";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const { fresco, sourceRows } = await generateNarrativeFresco();
+    const url = new URL(request.url);
+    const category = url.searchParams.get("category") ?? undefined;
+    const { fresco, sourceRows } = await generateNarrativeFresco({ category });
     return NextResponse.json({
       fresco,
       sourceMemoryIds: sourceRows.map((row) => row.id),

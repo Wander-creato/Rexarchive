@@ -1,3 +1,5 @@
+import type { MemoryCategory } from "@/constants/memory-categories";
+
 export type MediaType = "photo" | "video" | "audio";
 
 export interface MemoryContribution {
@@ -7,7 +9,7 @@ export interface MemoryContribution {
   url: string;
   title: string | null;
   description: string | null;
-  category: string | null;
+  category: MemoryCategory;
   isOptimistic?: boolean;
 }
 

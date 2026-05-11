@@ -11,20 +11,20 @@ create table memories (
 );
 
 insert into storage.buckets (id, name, public)
-values ('vault', 'vault', true)
+values ('archives', 'archives', true)
 on conflict (id) do nothing;
 
-drop policy if exists "Public read vault memories" on storage.objects;
-create policy "Public read vault memories"
+drop policy if exists "Public read archives memories" on storage.objects;
+create policy "Public read archives memories"
 on storage.objects for select
 to anon, authenticated
-using (bucket_id = 'vault');
+using (bucket_id = 'archives');
 
-drop policy if exists "Public upload vault memories" on storage.objects;
-create policy "Public upload vault memories"
+drop policy if exists "Public upload archives memories" on storage.objects;
+create policy "Public upload archives memories"
 on storage.objects for insert
 to anon, authenticated
 with check (
-  bucket_id = 'vault'
+  bucket_id = 'archives'
   and (storage.foldername(name))[1] = 'memories'
 );

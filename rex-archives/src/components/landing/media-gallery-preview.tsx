@@ -6,6 +6,7 @@ import { Camera, Filter, Mic, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 
+import { DEFAULT_MEMORY_CATEGORY } from "@/constants/memory-categories";
 import { WaveformPlayer } from "@/components/audio/waveform-player";
 import { GlassCard } from "@/components/ui/glass-card";
 import type { MediaType, MemoryContribution } from "@/types/narrative";
@@ -148,6 +149,11 @@ function MemoryCard({ item, index, highlighted }: MemoryCardProps) {
       ) : null}
 
       <h4 className="mt-3 text-sm font-semibold text-slate-100">{item.title || "Emplacement vide - En attente de contenu"}</h4>
+      <p className="mt-2">
+        <span className="inline-flex rounded-full border border-amber-300/35 bg-amber-500/15 px-2.5 py-1 text-[11px] text-amber-100">
+          {item.category || DEFAULT_MEMORY_CATEGORY}
+        </span>
+      </p>
       <p className="mt-1 text-xs text-slate-300/85">{item.description || "Emplacement vide - En attente de contenu"}</p>
       {item.type === "audio" && item.url ? <WaveformPlayer audioUrl={item.url} /> : null}
     </motion.article>

@@ -8,7 +8,14 @@ import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useRouter } from "next/navigation";
 
+import {
+  DEFAULT_MEMORY_CATEGORY,
+  MEMORY_CATEGORIES,
+  normalizeMemoryCategory,
+  type MemoryCategory,
+} from "@/constants/memory-categories";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { mapMemoryRowToContribution } from "@/lib/memory-mappers";
@@ -27,12 +34,13 @@ const steps = [
 const vaultSchema = z.object({
   title: z.string().min(3, "Veuillez saisir un titre d'au moins 3 caractères."),
   description: z.string().min(12, "Veuillez saisir au moins 12 caractères."),
-  category: z.string().min(2, "Indiquez une catégorie."),
+  category: z.enum(MEMORY_CATEGORIES),
 });
 
 type VaultValues = z.infer<typeof vaultSchema>;
 type MemoryInsert = Database["public"]["Tables"]["memories"]["Insert"];
 type MemoryRow = Database["public"]["Tables"]["memories"]["Row"];
+const STORAGE_BUCKET = "archives";
 
 function detectMediaType(file: File): MediaType {
   if (file.type.startsWith("video/")) {
@@ -53,6 +61,7 @@ function fileLabel(file: File | null) {
 }
 
 export function UploadVaultPreview() {
+  const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedType, setSelectedType] = useState<MediaType>("photo");
@@ -65,6 +74,7 @@ export function UploadVaultPreview() {
   const {
     register,
     watch,
+    setValue,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
@@ -73,7 +83,7 @@ export function UploadVaultPreview() {
     defaultValues: {
       title: "",
       description: "",
-      category: "",
+      category: DEFAULT_MEMORY_CATEGORY,
     },
   });
 
@@ -110,6 +120,13 @@ export function UploadVaultPreview() {
   const runUpload = handleSubmit(async (values) => {
     if (!selectedFile) {
       setUploadStatus({ phase: "error", progress: 0, message: "Ajoutez d'abord un fichier média." });
+      toast.error("Aucun fichier sélectionné.");
+      return;
+    }
+
+    if (!values.category) {
+      setUploadStatus({ phase: "error", progress: 0, message: "Sélectionnez une catégorie avant de publier." });
+      toast.error("Catégorie manquante : choisissez une catégorie prédéfinie.");
       return;
     }
 
@@ -129,6 +146,8 @@ export function UploadVaultPreview() {
     try {
       const supabase = getSupabaseBrowserClient();
       localObjectUrl = URL.createObjectURL(selectedFile);
+      const normalizedCategory = normalizeMemoryCategory(values.category);
+
       const optimisticMemory: MemoryContribution = {
         id: optimisticId,
         createdAt: new Date().toISOString(),
@@ -136,30 +155,34 @@ export function UploadVaultPreview() {
         url: localObjectUrl,
         title: values.title,
         description: values.description,
-        category: values.category,
+        category: normalizedCategory,
         isOptimistic: true,
       };
 
       addOptimisticMemory(optimisticMemory);
 
       const storagePath = `memories/${Date.now()}-${selectedFile.name.replace(/\s+/g, "-").toLowerCase()}`;
-      const uploadResult = await supabase.storage.from("vault").upload(storagePath, selectedFile, {
+      const uploadResult = await supabase.storage.from(STORAGE_BUCKET).upload(storagePath, selectedFile, {
         cacheControl: "3600",
         upsert: false,
         contentType: selectedFile.type,
       });
 
       if (uploadResult.error) {
-        throw uploadResult.error;
+        throw new Error(`Échec de l'envoi dans le bucket "${STORAGE_BUCKET}" : ${uploadResult.error.message}`);
       }
 
-      const { data: publicAsset } = supabase.storage.from("vault").getPublicUrl(storagePath);
+      const { data: publicAsset } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
+      if (!publicAsset.publicUrl) {
+        throw new Error("Impossible de générer l'URL publique du média.");
+      }
+
       const insertPayload: MemoryInsert = {
         type: selectedType,
         url: publicAsset.publicUrl,
         title: values.title,
         description: values.description,
-        category: values.category,
+        category: normalizedCategory,
       };
 
       const { data: insertedRows, error: insertError } = await supabase
@@ -183,9 +206,10 @@ export function UploadVaultPreview() {
         progress: 100,
         message: "Souvenir archivé avec succès.",
       });
-      toast.success("Souvenir publié dans les archives.");
+      toast.success("Souvenir publié avec succès !");
       playUiSound("upload-complete");
-      reset({ title: "", description: "", category: "" });
+      router.refresh();
+      reset({ title: "", description: "", category: DEFAULT_MEMORY_CATEGORY });
       setSelectedFile(null);
       setSelectedType("photo");
       setStepIndex(0);
@@ -196,7 +220,7 @@ export function UploadVaultPreview() {
         progress: 0,
         message: error instanceof Error ? error.message : "Échec de l'importation.",
       });
-      toast.error("L'importation a échoué. Vérifiez la configuration Supabase.");
+      toast.error(error instanceof Error ? error.message : "L'importation a échoué.");
     } finally {
       window.clearInterval(progressTimer);
       if (localObjectUrl) {
@@ -307,11 +331,28 @@ export function UploadVaultPreview() {
                 {watch("description") || "Emplacement vide - En attente de contenu"}
               </p>
               <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Catégorie</label>
-              <input
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none ring-amber-300/30 placeholder:text-slate-400 focus:ring-2"
-                placeholder="Ex. Transmission, Commémoration, Vie quotidienne"
-                {...register("category")}
-              />
+              <div className="flex flex-wrap gap-2">
+                {MEMORY_CATEGORIES.map((category) => {
+                  const current = watch("category") as MemoryCategory;
+                  const isActive = current === category;
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => setValue("category", category, { shouldDirty: true, shouldValidate: true })}
+                      className={[
+                        "rounded-full border px-3 py-1.5 text-xs transition-colors",
+                        isActive
+                          ? "border-amber-300/70 bg-amber-500/25 text-amber-100"
+                          : "border-white/10 bg-white/5 text-slate-200 hover:border-amber-300/45",
+                      ].join(" ")}
+                    >
+                      {category}
+                    </button>
+                  );
+                })}
+              </div>
+              <input type="hidden" {...register("category")} />
               {errors.category ? <p className="text-xs text-rose-300">{errors.category.message}</p> : null}
             </div>
           </div>
