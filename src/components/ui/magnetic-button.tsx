@@ -1,10 +1,10 @@
 "use client";
 
-import type { ComponentPropsWithoutRef, MouseEvent } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import type { MouseEvent } from "react";
+import { motion, useMotionValue, useSpring, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-type MagneticButtonProps = ComponentPropsWithoutRef<"button"> & {
+type MagneticButtonProps = HTMLMotionProps<"button"> & {
   asChild?: never;
 };
 
