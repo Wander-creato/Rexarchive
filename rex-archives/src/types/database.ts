@@ -37,7 +37,12 @@ export interface Database {
           user_text_testimonial?: string | null;
           metadata?: Json;
         };
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
