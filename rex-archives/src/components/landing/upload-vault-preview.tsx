@@ -90,6 +90,22 @@ function canFallbackToOtherBucket(message: string) {
   return lowercase.includes("bucket") || lowercase.includes("not found") || lowercase.includes("does not exist");
 }
 
+function explainPublicationError(message: string) {
+  if (message.includes("Could not find the table 'public.memories'")) {
+    return "La table memories est absente. Exécutez la migration SQL V1 dans Supabase (fichier: supabase/migrations/202605110305_reset_memories_v1.sql).";
+  }
+
+  if (message.toLowerCase().includes("row-level security policy")) {
+    return "La politique RLS bloque l'opération. Vérifiez les policies INSERT/SELECT sur public.memories et storage.objects pour le bucket archives.";
+  }
+
+  if (message.toLowerCase().includes("bucket not found")) {
+    return "Le bucket Storage est introuvable. Créez le bucket 'archives' (ou 'vault') et autorisez l'upload du dossier memories/.";
+  }
+
+  return message;
+}
+
 export function UploadVaultPreview() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
@@ -287,12 +303,14 @@ export function UploadVaultPreview() {
       setStepIndex(0);
     } catch (error) {
       removeMemory(optimisticId);
+      const rawMessage = error instanceof Error ? error.message : "Échec de l'importation.";
+      const friendlyMessage = explainPublicationError(rawMessage);
       setUploadStatus({
         phase: "error",
         progress: 0,
-        message: error instanceof Error ? error.message : "Échec de l'importation.",
+        message: friendlyMessage,
       });
-      toast.error(error instanceof Error ? error.message : "L'importation a échoué.");
+      toast.error(friendlyMessage);
     } finally {
       window.clearInterval(progressTimer);
       if (localObjectUrl) {
