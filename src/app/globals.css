@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --midnight: #0f172a;
+  --teal: #115e59;
+  --amber: #f59e0b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-midnight: var(--midnight);
+  --color-slate-teal: var(--teal);
+  --color-memory-amber: var(--amber);
+  --font-sans: "Inter", "Satoshi", "Segoe UI", system-ui, sans-serif;
+  --font-serif: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  --shadow-glow: 0 0 80px rgba(245, 158, 11, 0.26);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--background);
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(17, 94, 89, 0.34), transparent 32rem),
+    radial-gradient(circle at 86% 6%, rgba(245, 158, 11, 0.18), transparent 28rem),
+    linear-gradient(135deg, #0f172a 0%, #111827 48%, #082f49 100%);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: rgba(245, 158, 11, 0.35);
+}
+
+button,
+a,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.05)
+  );
+  box-shadow: 0 24px 80px rgba(2, 6, 23, 0.34);
+  backdrop-filter: blur(24px);
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.fresco-scroll {
+  scrollbar-width: none;
+}
+
+.fresco-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.noise-overlay {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.16;
+  mix-blend-mode: soft-light;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at center, black, transparent 72%);
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
