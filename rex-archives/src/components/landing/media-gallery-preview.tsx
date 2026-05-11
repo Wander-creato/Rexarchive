@@ -23,7 +23,7 @@ const filters: { id: MediaType | "all"; label: string }[] = [
   { id: "all", label: "Tout" },
   { id: "photo", label: "Photos" },
   { id: "video", label: "Vidéos" },
-  { id: "audio", label: "Audio" },
+  { id: "audio", label: "Vocal" },
 ];
 
 function MediaIcon({ type }: { type: MediaType }) {
@@ -34,7 +34,7 @@ function MediaIcon({ type }: { type: MediaType }) {
 
 function mediaTypeLabel(type: MediaType) {
   if (type === "video") return "vidéo";
-  if (type === "audio") return "audio";
+  if (type === "audio") return "vocal";
   return "photo";
 }
 

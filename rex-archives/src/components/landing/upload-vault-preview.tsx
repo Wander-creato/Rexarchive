@@ -60,6 +60,12 @@ function fileLabel(file: File | null) {
   return `${file.name} (${sizeMb} MB)`;
 }
 
+function mediaTypeLabel(type: MediaType) {
+  if (type === "video") return "vidéo";
+  if (type === "audio") return "vocal";
+  return "photo";
+}
+
 export function UploadVaultPreview() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
@@ -293,7 +299,7 @@ export function UploadVaultPreview() {
         {stepIndex === 1 ? (
           <div className="space-y-3 rounded-2xl border border-white/10 bg-[#0f172a]/80 p-4">
             <p className="rounded-xl border border-amber-300/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-              Type détecté : {selectedType}
+              Type détecté : {mediaTypeLabel(selectedType)}
             </p>
             <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Titre du souvenir</label>
             <input
@@ -322,7 +328,7 @@ export function UploadVaultPreview() {
                 <span className="text-slate-400">Fichier :</span> {fileLabel(selectedFile)}
               </p>
               <p>
-                <span className="text-slate-400">Type :</span> {selectedType}
+                <span className="text-slate-400">Type :</span> {mediaTypeLabel(selectedType)}
               </p>
               <p>
                 <span className="text-slate-400">Titre :</span> {watch("title") || "Emplacement vide - En attente de contenu"}
