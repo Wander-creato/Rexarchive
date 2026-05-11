@@ -1,11 +1,12 @@
 "use client";
 
-import type { MouseEvent } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { motion, useMotionValue, useSpring, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-type MagneticButtonProps = HTMLMotionProps<"button"> & {
+type MagneticButtonProps = Omit<HTMLMotionProps<"button">, "children"> & {
   asChild?: never;
+  children: ReactNode;
 };
 
 export function MagneticButton({
