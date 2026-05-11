@@ -18,14 +18,14 @@ import type { Database } from "@/types/database";
 import type { MediaType, MemoryContribution } from "@/types/narrative";
 
 const steps = [
-  { id: "step-1", title: "Upload", detail: "Drag media to secure storage", icon: Upload },
-  { id: "step-2", title: "Describe", detail: "Add context and testimonial details", icon: FileText },
-  { id: "step-3", title: "Review", detail: "Validate before final submission", icon: Video },
+  { id: "step-1", title: "Importation", detail: "Glissez vos médias vers l'espace sécurisé", icon: Upload },
+  { id: "step-2", title: "Contexte", detail: "Ajoutez le récit et les détails du témoignage", icon: FileText },
+  { id: "step-3", title: "Validation", detail: "Vérifiez avant publication", icon: Video },
 ];
 
 const vaultSchema = z.object({
   type: z.enum(["image", "video", "audio"]),
-  userTextTestimonial: z.string().min(12, "Please provide at least 12 characters."),
+  userTextTestimonial: z.string().min(12, "Veuillez saisir au moins 12 caractères."),
   transcript: z.string().optional(),
 });
 
@@ -45,10 +45,16 @@ function detectMediaType(file: File): MediaType {
 
 function fileLabel(file: File | null) {
   if (!file) {
-    return "No media selected";
+    return "Aucun média sélectionné";
   }
   const sizeMb = (file.size / 1_000_000).toFixed(2);
   return `${file.name} (${sizeMb} MB)`;
+}
+
+function mediaTypeLabel(mediaType: MediaType) {
+  if (mediaType === "video") return "vidéo";
+  if (mediaType === "audio") return "audio";
+  return "image";
 }
 
 export function UploadVaultPreview() {
@@ -95,7 +101,7 @@ export function UploadVaultPreview() {
       setUploadStatus({
         phase: "error",
         progress: 0,
-        message: "Unsupported file type. Please upload image, video, or audio.",
+        message: "Type non pris en charge. Importez une image, une vidéo ou un audio.",
       });
     },
   });
@@ -103,27 +109,27 @@ export function UploadVaultPreview() {
   const progressLabel = useMemo(
     () =>
       uploadStatus.phase === "uploading"
-        ? `Uploading ${uploadStatus.progress}%`
-        : uploadStatus.message ?? "Ready to ingest",
+        ? `Importation ${uploadStatus.progress}%`
+        : uploadStatus.message ?? "Prêt à archiver",
     [uploadStatus],
   );
 
   const runUpload = handleSubmit(async (values) => {
     if (!selectedFile) {
-      setUploadStatus({ phase: "error", progress: 0, message: "Please attach a media file first." });
+      setUploadStatus({ phase: "error", progress: 0, message: "Ajoutez d'abord un fichier média." });
       return;
     }
 
     const optimisticId = `optimistic-${Date.now()}`;
     let localObjectUrl = "";
     let progress = 7;
-    setUploadStatus({ phase: "uploading", progress, message: "Preparing secure transfer..." });
+    setUploadStatus({ phase: "uploading", progress, message: "Préparation du transfert sécurisé..." });
     const progressTimer = window.setInterval(() => {
       progress = Math.min(progress + 9, 92);
       setUploadStatus({
         phase: "uploading",
         progress,
-        message: "Uploading into ADAMIC vault...",
+        message: "Importation dans le coffre ADAMIC...",
       });
     }, 220);
 
@@ -181,14 +187,14 @@ export function UploadVaultPreview() {
 
       const insertedRow = insertedRows?.[0] as MemoryRow | undefined;
       if (!insertedRow) {
-        throw new Error("Upload completed but no memory row returned.");
+        throw new Error("Importation terminée, mais aucune ligne mémoire n'a été renvoyée.");
       }
 
       reconcileMemory(optimisticId, mapMemoryRowToContribution(insertedRow));
       setUploadStatus({
         phase: "success",
         progress: 100,
-        message: "Memory successfully archived.",
+        message: "Souvenir archivé avec succès.",
       });
       playUiSound("upload-complete");
       reset({ type: "image", userTextTestimonial: "", transcript: "" });
@@ -199,7 +205,7 @@ export function UploadVaultPreview() {
       setUploadStatus({
         phase: "error",
         progress: 0,
-        message: error instanceof Error ? error.message : "Upload failed.",
+        message: error instanceof Error ? error.message : "Échec de l'importation.",
       });
     } finally {
       window.clearInterval(progressTimer);
@@ -213,11 +219,11 @@ export function UploadVaultPreview() {
     <GlassCard className="h-full p-5 md:p-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-teal-200/80">Unified Upload Vault</p>
-          <h3 className="mt-1 text-xl font-semibold text-slate-100">Multi-step ingestion flow</h3>
+          <p className="text-xs uppercase tracking-[0.18em] text-teal-200/80">Coffre d&apos;importation unifié</p>
+          <h3 className="mt-1 text-xl font-semibold text-slate-100">Parcours d&apos;ingestion en 3 étapes</h3>
         </div>
         <span className="rounded-full border border-teal-300/35 bg-teal-300/10 px-3 py-1 text-xs text-teal-100">
-          Live Supabase
+          Supabase en direct
         </span>
       </div>
 
@@ -264,27 +270,27 @@ export function UploadVaultPreview() {
             ].join(" ")}
           >
             <input {...dropzone.getInputProps()} />
-            <p className="text-sm font-medium text-slate-100">Drag and drop media into the vault</p>
-            <p className="mt-1 text-xs text-slate-300/80">or tap to browse local files</p>
+            <p className="text-sm font-medium text-slate-100">Glissez-déposez vos médias dans le coffre</p>
+            <p className="mt-1 text-xs text-slate-300/80">ou cliquez pour parcourir vos fichiers locaux</p>
             <p className="mt-3 text-xs text-teal-100">{fileLabel(selectedFile)}</p>
           </div>
         ) : null}
 
         {stepIndex === 1 ? (
           <div className="space-y-3 rounded-2xl border border-white/10 bg-[#0f172a]/80 p-4">
-            <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Media type</label>
+            <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Type de média</label>
             <select
               className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none ring-amber-300/30 focus:ring-2"
               {...register("type")}
             >
               <option value="image">Image</option>
-              <option value="video">Video</option>
+              <option value="video">Vidéo</option>
               <option value="audio">Audio</option>
             </select>
-            <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Testimonial</label>
+            <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Témoignage</label>
             <textarea
               className="min-h-24 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none ring-amber-300/30 placeholder:text-slate-400 focus:ring-2"
-              placeholder="Describe the memory, context, and why it matters."
+              placeholder="Décrivez le souvenir, son contexte et son importance."
               {...register("userTextTestimonial")}
             />
             {errors.userTextTestimonial ? (
@@ -292,10 +298,10 @@ export function UploadVaultPreview() {
             ) : null}
             {selectedType === "audio" ? (
               <>
-                <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Transcript</label>
+                <label className="block text-xs uppercase tracking-[0.14em] text-slate-300">Transcription</label>
                 <textarea
                   className="min-h-20 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none ring-amber-300/30 placeholder:text-slate-400 focus:ring-2"
-                  placeholder="Optional transcript for audio testimonial."
+                  placeholder="Transcription optionnelle du témoignage audio."
                   {...register("transcript")}
                 />
               </>
@@ -305,21 +311,23 @@ export function UploadVaultPreview() {
 
         {stepIndex === 2 ? (
           <div className="rounded-2xl border border-white/10 bg-[#0f172a]/80 p-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-300">Review snapshot</p>
+            <p className="text-xs uppercase tracking-[0.14em] text-slate-300">Aperçu de validation</p>
             <div className="mt-3 grid gap-2 text-sm text-slate-200">
               <p>
-                <span className="text-slate-400">File:</span> {fileLabel(selectedFile)}
+                <span className="text-slate-400">Fichier :</span> {fileLabel(selectedFile)}
               </p>
               <p>
-                <span className="text-slate-400">Type:</span> {selectedType}
+                <span className="text-slate-400">Type :</span> {mediaTypeLabel(selectedType)}
               </p>
-              <p className="text-xs text-slate-300/85">{watch("userTextTestimonial") || "No testimonial yet."}</p>
+              <p className="text-xs text-slate-300/85">
+                {watch("userTextTestimonial") || "Aucun témoignage rédigé pour l'instant."}
+              </p>
             </div>
           </div>
         ) : null}
 
         <div className="rounded-2xl border border-white/10 bg-[#0f172a]/80 p-4">
-          <p className="text-xs tracking-[0.14em] text-slate-300 uppercase">Vault transfer status</p>
+          <p className="text-xs tracking-[0.14em] text-slate-300 uppercase">État du transfert vers le coffre</p>
           {uploadStatus.phase === "idle" ? (
             <div className="mt-3 grid gap-2">
               <Skeleton className="h-3 w-2/3" />
@@ -347,7 +355,7 @@ export function UploadVaultPreview() {
             className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-3 py-2 text-xs text-slate-200 transition-colors hover:border-white/35 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ChevronLeft className="size-3.5" />
-            Back
+            Retour
           </button>
 
           {stepIndex < 2 ? (
@@ -357,7 +365,7 @@ export function UploadVaultPreview() {
               onClick={() => setStepIndex((current) => Math.min(current + 1, 2))}
               className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-3 py-2 text-xs font-semibold text-slate-950 transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Next
+              Suivant
               <ChevronRight className="size-3.5" />
             </button>
           ) : (
@@ -367,7 +375,7 @@ export function UploadVaultPreview() {
               className="inline-flex items-center gap-2 rounded-xl bg-teal-300 px-3 py-2 text-xs font-semibold text-slate-950 transition-colors hover:bg-teal-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? <LoaderCircle className="size-3.5 animate-spin" /> : null}
-              Archive Memory
+              Archiver le souvenir
             </button>
           )}
         </div>

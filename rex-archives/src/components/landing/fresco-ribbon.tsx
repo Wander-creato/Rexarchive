@@ -34,7 +34,7 @@ export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) 
       try {
         const response = await fetch("/api/fresco", { method: "GET", cache: "no-store" });
         if (!response.ok) {
-          throw new Error("Fresco generation failed.");
+          throw new Error("Échec de génération de la fresque.");
         }
 
         const payload = (await response.json()) as FrescoResponse;
@@ -44,26 +44,26 @@ export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) 
       } catch {
         if (isCancelled) return;
         setFresco({
-          title: "Fallback Narrative Fresco",
+          title: "Fresque narrative de secours",
           fullNarrative:
-            "Memories continue to gather, forming a living archive where voices and visuals reconnect across generations.",
+            "Les souvenirs continuent d'affluer et composent une archive vivante, où les voix et les images se répondent au fil des générations.",
           chapters: [
             {
               id: "chapter-1",
-              title: "Origins",
-              body: "Early memories reveal a community archiving identity through moments of collective care.",
+              title: "Les Origines",
+              body: "Les premiers fragments racontent une communauté qui protège son identité par des gestes de transmission.",
               mediaIds: memories.slice(0, 2).map((entry) => entry.id),
             },
             {
               id: "chapter-2",
-              title: "Transmission",
-              body: "Audio and visuals carry stories forward, turning individual recollections into shared testimony.",
+              title: "L'Âge d'Or",
+              body: "Les images et les voix se multiplient, transformant les souvenirs individuels en héritage collectif.",
               mediaIds: memories.slice(1, 3).map((entry) => entry.id),
             },
             {
               id: "chapter-3",
-              title: "Continuity",
-              body: "Each new upload extends the archive into a living narrative that remains open to future voices.",
+              title: "La Renaissance",
+              body: "Chaque nouveau dépôt relance le récit commun et ouvre l'archive aux voix de demain.",
               mediaIds: memories.slice(2, 4).map((entry) => entry.id),
             },
           ],
@@ -139,17 +139,17 @@ export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) 
               <span className="text-xs font-semibold text-amber-100">{loadingProgress}%</span>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-teal-200/80">Synthesizing narrative</p>
-              <h2 className="mt-1 text-xl font-semibold text-slate-50">Generating your History...</h2>
+              <p className="text-xs uppercase tracking-[0.18em] text-teal-200/80">Synthèse narrative</p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-50">Génération de votre histoire...</h2>
             </div>
           </div>
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-teal-200/80">Narrative Layer</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-teal-200/80">Couche narrative</p>
                 <h2 className="mt-1 text-2xl font-semibold text-slate-100 md:text-3xl">
-                  {fresco?.title ?? "AI Narrative Fresco"}
+                  {fresco?.title ?? "Fresque narrative IA"}
                 </h2>
               </div>
               <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) 
                 >
                   <p className="inline-flex items-center gap-2 rounded-full border border-teal-300/35 bg-teal-300/10 px-2.5 py-1 text-xs text-teal-100">
                     <Sparkles className="size-3.5" />
-                    Thematic Chapter
+                    Chapitre thématique
                   </p>
                   <h3 className="mt-2 text-lg font-semibold text-slate-50">{activeChapter.title}</h3>
                   <p className="mt-2 min-h-20 text-sm leading-6 text-slate-200/85">
@@ -198,7 +198,7 @@ export function FrescoRibbon({ memories, onHighlightMedia }: FrescoRibbonProps) 
                         key={mediaId}
                         className="inline-flex items-center gap-1 rounded-full border border-amber-300/30 bg-amber-500/10 px-2.5 py-1 text-[11px] text-amber-100"
                       >
-                        Media {mediaId.slice(0, 8)}
+                        Média {mediaId.slice(0, 8)}
                       </span>
                     ))}
                   </div>

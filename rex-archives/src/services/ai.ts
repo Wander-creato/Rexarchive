@@ -32,17 +32,20 @@ function safeJsonParse(payload: string): NarrativeFresco | null {
 
 function localFallback(rows: TestimonialRow[]): NarrativeFresco {
   const snippets = rows.slice(0, 3).map((entry) => entry.user_text_testimonial ?? entry.transcript ?? "");
-  const chapters = snippets.map((snippet, index) => ({
-    id: `chapter-${index + 1}`,
-    title: `Chapter ${index + 1}: Living Memory`,
-    body: snippet.slice(0, 240) || "Community memories are still gathering momentum.",
+  const chapterTitles = ["Les Origines", "L'Âge d'Or", "La Renaissance"];
+  const chapters = chapterTitles.map((title, index) => ({
+    id: `chapitre-${index + 1}`,
+    title,
+    body:
+      snippets[index]?.slice(0, 240) ||
+      "Les souvenirs de la communauté continuent d'alimenter une mémoire commune en perpétuelle évolution.",
     mediaIds: [rows[index]?.id].filter(Boolean),
   }));
 
   return {
-    title: "A Living Archive in Three Movements",
+    title: "La fresque vivante du Rex",
     fullNarrative:
-      "From workshop tables to shared circles, ADAMIC's memories reveal a community that records, restores, and transmits identity. Each contribution extends a living chain between generations.",
+      "Du premier atelier aux nouveaux dépôts, les archives du Rex racontent une mémoire collective qui se construit, se transmet et se réinvente. Chaque témoignage ajoute une voix à ce patrimoine vivant.",
     chapters,
   };
 }
@@ -57,7 +60,7 @@ async function fetchRecentTestimonials(limit: number) {
     .limit(limit);
 
   if (error) {
-    throw new Error(`Failed to fetch testimonials: ${error.message}`);
+    throw new Error(`Impossible de récupérer les témoignages : ${error.message}`);
   }
 
   return (data ?? []) as TestimonialRow[];
@@ -72,12 +75,14 @@ function buildPrompt(rows: TestimonialRow[]) {
     .join("\n");
 
   return [
-    "You are an AI narrative fresco engine for a memory archive.",
-    "Weave these individual memories into a coherent, poetic 200-word narrative divided into 3 thematic chapters.",
-    "Each chapter must include: id, title, body, mediaIds (choose relevant ids from provided entries).",
-    "Output strict JSON with this shape:",
+    "Tu es le moteur narratif IA d'une archive de mémoire vivante.",
+    "Raconte l'histoire du Rex en tissant ensemble les témoignages fournis. Divise le récit en 3 chapitres : Les Origines, L'Âge d'Or, et La Renaissance.",
+    "Le récit global doit être poétique, cohérent et d'environ 200 mots.",
+    "Réponds exclusivement en français.",
+    "Chaque chapitre doit contenir : id, title, body, mediaIds (choisis des identifiants pertinents depuis les entrées).",
+    "Retourne strictement du JSON avec cette forme :",
     "{ title: string, fullNarrative: string, chapters: [{ id: string, title: string, body: string, mediaIds: string[] }] }",
-    "Entries:",
+    "Entrées :",
     entries,
   ].join("\n");
 }
@@ -102,13 +107,13 @@ async function generateWithAnthropic(
   });
 
   if (!response.ok) {
-    throw new Error(`Anthropic narrative request failed (${response.status}).`);
+    throw new Error(`Échec de la requête narrative Anthropic (${response.status}).`);
   }
 
   const payload = await response.json();
   const parsed = safeJsonParse(payload?.content?.[0]?.text ?? "");
   if (!parsed) {
-    throw new Error("Unable to parse Anthropic narrative response.");
+    throw new Error("Impossible d'interpréter la réponse narrative Anthropic.");
   }
   return parsed;
 }
@@ -145,7 +150,7 @@ async function generateWithOpenAI(
                   type: "object",
                   properties: {
                     id: { type: "string" },
-                    title: { type: "string" },
+                    title: { type: "string", enum: ["Les Origines", "L'Âge d'Or", "La Renaissance"] },
                     body: { type: "string" },
                     mediaIds: { type: "array", items: { type: "string" } },
                   },
@@ -163,13 +168,13 @@ async function generateWithOpenAI(
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI narrative request failed (${response.status}).`);
+    throw new Error(`Échec de la requête narrative OpenAI (${response.status}).`);
   }
 
   const payload = await response.json();
   const parsed = safeJsonParse(payload?.output_text ?? "");
   if (!parsed) {
-    throw new Error("Unable to parse OpenAI narrative response.");
+    throw new Error("Impossible d'interpréter la réponse narrative OpenAI.");
   }
   return parsed;
 }
@@ -197,7 +202,7 @@ export async function generateNarrativeFresco(
     if (provider === "anthropic") {
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) {
-        throw new Error("ANTHROPIC_API_KEY is not configured.");
+        throw new Error("ANTHROPIC_API_KEY n'est pas configurée.");
       }
       const fresco = await generateWithAnthropic(prompt, model, apiKey);
       return { fresco, sourceRows: rows };
@@ -205,7 +210,7 @@ export async function generateNarrativeFresco(
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      throw new Error("OPENAI_API_KEY is not configured.");
+      throw new Error("OPENAI_API_KEY n'est pas configurée.");
     }
     const fresco = await generateWithOpenAI(prompt, model, apiKey);
     return { fresco, sourceRows: rows };

@@ -54,7 +54,7 @@ export function ImmersiveHero() {
           className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-300/30 bg-teal-300/10 px-3 py-1 text-xs font-medium tracking-[0.16em] text-teal-100 uppercase"
         >
           <Sparkles className="size-3.5" />
-          AI Narrative Fresco
+          Fresque narrative IA
         </motion.p>
 
         <motion.h1
@@ -63,8 +63,8 @@ export function ImmersiveHero() {
           transition={{ delay: 0.2, duration: 0.65 }}
           className="max-w-4xl text-3xl leading-tight font-semibold text-slate-50 md:text-5xl"
         >
-          Preserve memory as a living tapestry, where every voice, image, and testimony reconnects across
-          generations.
+          Préserver la mémoire comme une tapisserie vivante, où chaque voix, image et témoignage relie les
+          générations.
         </motion.h1>
 
         <motion.p
@@ -73,8 +73,8 @@ export function ImmersiveHero() {
           transition={{ delay: 0.28, duration: 0.6 }}
           className="mt-5 max-w-2xl text-sm leading-7 text-slate-200/90 md:text-base"
         >
-          Rex-Archives is ADAMIC&apos;s modern heritage platform for trusted media archiving, immersive narrative
-          exploration, and AI-assisted storytelling.
+          Rex-Archives est la plateforme d&apos;héritage moderne d&apos;ADAMIC, pensée pour l&apos;archivage fiable, la
+          consultation immersive et la narration assistée par IA.
         </motion.p>
 
         <motion.div
@@ -87,14 +87,14 @@ export function ImmersiveHero() {
             type="button"
             className="group inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-950 transition-all duration-300 hover:-translate-y-1 hover:bg-amber-400"
           >
-            Start a Memory Upload
+            Déposer un souvenir
             <UploadCloud className="size-4 transition-transform group-hover:translate-x-1" />
           </button>
           <button
             type="button"
             className="group inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-100 transition-all duration-300 hover:-translate-y-1 hover:border-teal-300/50 hover:bg-white/10"
           >
-            Explore the Fresco
+            Explorer la fresque
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
           </button>
         </motion.div>

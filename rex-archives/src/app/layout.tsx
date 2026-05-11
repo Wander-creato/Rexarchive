@@ -10,7 +10,7 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "Rex-Archives | ADAMIC",
   description:
-    "Rex-Archives preserves media memories with AI narrative synthesis, immersive fresco views, and trusted archival flows.",
+    "Rex-Archives préserve les souvenirs média avec une synthèse narrative IA, des fresques immersives et des parcours d'archivage fiables.",
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
+    <html lang="fr" className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full font-sans text-slate-100">{children}</body>
     </html>
   );

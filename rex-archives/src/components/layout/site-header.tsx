@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { Archive, Sparkles, UploadCloud } from "lucide-react";
 
 const navItems = [
-  { label: "Vault", icon: UploadCloud },
-  { label: "Narrative Fresco", icon: Sparkles },
-  { label: "Archive", icon: Archive },
+  { label: "Coffre", icon: UploadCloud },
+  { label: "Fresque narrative", icon: Sparkles },
+  { label: "Archives", icon: Archive },
 ];
 
 export function SiteHeader() {
